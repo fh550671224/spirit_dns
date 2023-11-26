@@ -1,4 +1,4 @@
-package spiritDNS
+package main
 
 import (
 	"fmt"
