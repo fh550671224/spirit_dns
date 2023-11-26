@@ -5,9 +5,22 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strings"
 )
 
-type DNSRequest struct {
+type DNSQuestion struct {
+	Name   string
+	QType  uint16
+	QClass uint16
+}
+
+type DNSHeader struct {
+	ID      uint16
+	Flags   uint16
+	Qdcount uint16
+	Ancount uint16
+	Nscount uint16
+	Arcount uint16
 }
 
 func main() {
@@ -41,13 +54,22 @@ func handleClient(conn *net.UDPConn) {
 
 	// 处理数据
 	dnsHeader := parseDNSRequest(buffer[:n])
+	//fmt.Printf("Query: %q\n", buffer[:n])
 
-	fmt.Printf("%x %x %x %x %x %x\n", dnsHeader.ID, dnsHeader.Flags, dnsHeader.Qdcount, dnsHeader.Ancount, dnsHeader.Nscount,
-		dnsHeader.Arcount)
+	fmt.Printf("%x %x %x %x %x %x\n", dnsHeader.ID, dnsHeader.Flags,
+		dnsHeader.Qdcount, dnsHeader.Ancount, dnsHeader.Nscount, dnsHeader.Arcount)
+
+	questions := parseDNSQuestion(buffer, dnsHeader.Qdcount)
+
+	for _, q := range questions {
+		fmt.Println(q.Name)
+	}
+
+	//fmt.Printf("length of last name:%x and is: %c %c %c\n", buffer[12], buffer[13], buffer[14], buffer[15])
 }
 
-func parseDNSRequest(data []byte) DNSHeader {
-	return DNSHeader{
+func parseDNSRequest(data []byte) *DNSHeader {
+	return &DNSHeader{
 		ID:      binary.BigEndian.Uint16(data[0:2]),
 		Flags:   binary.BigEndian.Uint16(data[2:4]),
 		Qdcount: binary.BigEndian.Uint16(data[4:6]),
@@ -57,11 +79,30 @@ func parseDNSRequest(data []byte) DNSHeader {
 	}
 }
 
-type DNSHeader struct {
-	ID      uint16
-	Flags   uint16
-	Qdcount uint16
-	Ancount uint16
-	Nscount uint16
-	Arcount uint16
+func parseDNSQuestion(data []byte, Qdcount uint16) []*DNSQuestion {
+	offset := 12
+	var questions []*DNSQuestion
+	for Qdcount > 0 {
+		q := DNSQuestion{}
+
+		var names []string
+		for data[offset] != 0 {
+			length := int(data[offset])
+			offset++
+			name := data[offset : offset+length]
+			names = append(names, string(name))
+			offset += length
+		}
+		q.Name = strings.Join(names, ".")
+
+		offset++
+		q.QType = binary.BigEndian.Uint16(data[offset : offset+2])
+		offset += 2
+		q.QClass = binary.BigEndian.Uint16(data[offset : offset+2])
+
+		questions = append(questions, &q)
+		Qdcount--
+	}
+
+	return questions
 }
