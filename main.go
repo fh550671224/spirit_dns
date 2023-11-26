@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/binary"
 	"fmt"
 	"net"
 	"os"
@@ -33,21 +34,34 @@ func main() {
 func handleClient(conn *net.UDPConn) {
 	buffer := make([]byte, 1024)
 
-	n, addr, err := conn.ReadFromUDP(buffer)
+	n, _, err := conn.ReadFromUDP(buffer)
 	if err != nil {
 		return
 	}
 
 	// 处理数据
-	dnsRequest, parseErr := parseDNSRequest(buffer[:n])
-	if parseErr != nil {
-		return
-	}
+	dnsHeader := parseDNSRequest(buffer[:n])
 
-	fmt.Println(dnsRequest, addr)
-
+	fmt.Printf("%x %x %x %x %x %x\n", dnsHeader.ID, dnsHeader.Flags, dnsHeader.Qdcount, dnsHeader.Ancount, dnsHeader.Nscount,
+		dnsHeader.Arcount)
 }
 
-func parseDNSRequest(data []byte) (DNSRequest, error) {
-	return DNSRequest{}, nil
+func parseDNSRequest(data []byte) DNSHeader {
+	return DNSHeader{
+		ID:      binary.BigEndian.Uint16(data[0:2]),
+		Flags:   binary.BigEndian.Uint16(data[2:4]),
+		Qdcount: binary.BigEndian.Uint16(data[4:6]),
+		Ancount: binary.BigEndian.Uint16(data[6:8]),
+		Nscount: binary.BigEndian.Uint16(data[8:10]),
+		Arcount: binary.BigEndian.Uint16(data[10:12]),
+	}
+}
+
+type DNSHeader struct {
+	ID      uint16
+	Flags   uint16
+	Qdcount uint16
+	Ancount uint16
+	Nscount uint16
+	Arcount uint16
 }
