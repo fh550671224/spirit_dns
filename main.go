@@ -69,14 +69,16 @@ func main() {
 func handleClient(conn *net.UDPConn) {
 	buffer := make([]byte, 1024)
 
-	n, _, err := conn.ReadFromUDP(buffer)
+	n, client, err := conn.ReadFromUDP(buffer)
 	if err != nil {
 		log.Fatal(err)
 		return
 	}
 
+	log.Printf("Received UDP request from %s", client.IP)
+
 	// 处理数据
-	dnsHeader := parseDNSRequest(buffer[:n])
+	dnsHeader := parseDNSHeader(buffer[:n])
 	//fmt.Printf("Query: %q\n", buffer[:n])
 
 	fmt.Printf("%x %v %x %x %x %x\n", dnsHeader.ID, dnsHeader.Flags,
@@ -122,10 +124,25 @@ func sendDNSRequest(data []byte, ip string) {
 	}
 
 	// 处理数据
-	dnsHeader := parseDNSRequest(buffer[:n])
-	fmt.Printf("Response: %q\n", buffer[:n])
+	dnsHeader := parseDNSHeader(buffer[:n])
+	//fmt.Printf("Response: %q\n", buffer[:n])
 	if dnsHeader.Flags.TC {
 		// 重新发起TCP
+		for i := 0; i < len(shared.ROOT_DNS_SERVERS); i++ {
+			buffer, err = tryTCP(data, shared.ROOT_DNS_SERVERS[i])
+			n = len(buffer)
+			if err != nil {
+				if i == len(shared.ROOT_DNS_SERVERS)-1 {
+					log.Fatal("no root server tcp available")
+				}
+				log.Printf("%s tryTCP err: %v, trying next ip", ip, err)
+			} else {
+				log.Printf("%s tryTCP success", ip)
+				break
+			}
+		}
+		// 重新读头
+		dnsHeader = parseDNSHeader(buffer[:n])
 	}
 
 	fmt.Printf("%x %v %x %x %x %x\n", dnsHeader.ID, dnsHeader.Flags,
@@ -143,7 +160,38 @@ func sendDNSRequest(data []byte, ip string) {
 	fmt.Println(additionalRRs)
 }
 
-func parseDNSRequest(data []byte) *DNSHeader {
+func tryTCP(data []byte, ip string) ([]byte, error) {
+	tcpConn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
+		IP:   net.ParseIP(ip),
+		Port: 53,
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer tcpConn.Close()
+
+	dataLength := len(data)
+	tcpData := make([]byte, 2+dataLength)
+	tcpData[0] = byte(dataLength >> 8)
+	tcpData[1] = byte(dataLength & 0xff)
+	copy(tcpData[2:], data)
+
+	_, err = tcpConn.Write(tcpData)
+	if err != nil {
+		return nil, err
+	}
+
+	buffer := make([]byte, 4096)
+	_, err = tcpConn.Read(buffer)
+	if err != nil {
+		return nil, err
+	}
+	respLength := binary.BigEndian.Uint16(buffer[0:2])
+
+	return buffer[2 : 2+respLength], nil
+}
+
+func parseDNSHeader(data []byte) *DNSHeader {
 	return &DNSHeader{
 		ID:      binary.BigEndian.Uint16(data[0:2]),
 		Flags:   *parseDNSFlags(binary.BigEndian.Uint16(data[2:4])),
@@ -219,8 +267,8 @@ func parseNameByOffset(data []byte, offset int) (string, int) {
 			offset += length
 		}
 	}
-	res := strings.Join(names, ".")
-	return res, offset
+
+	return strings.Join(names, "."), offset
 }
 
 func parseDNSResourceRecord(data []byte, offset int, count uint16) ([]*DNSResourceRecord, int) {
