@@ -1,10 +1,11 @@
 package shared
 
 const (
-	QTYPE_A     = 1
-	QTYPE_NS    = 2
-	QTYPE_CNAME = 5
-	QTYPE_PTR   = 12
+	TYPE_A     = 1
+	TYPE_NS    = 2
+	TYPE_CNAME = 5
+	TYPE_PTR   = 12
+	TYPE_AAAA  = 28
 )
 
 var ROOT_DNS_SERVERS = []string{
@@ -21,5 +22,4 @@ var ROOT_DNS_SERVERS = []string{
 	"193.0.14.129",   // k.root-servers.net
 	"199.7.83.42",    // l.root-servers.net
 	"202.12.27.33",   // m.root-servers.net
-
 }

@@ -88,7 +88,7 @@ func handleClient(conn *net.UDPConn) {
 		for _, q := range questions {
 			fmt.Println(q.Name)
 			switch q.QType {
-			case shared.QTYPE_A:
+			case shared.TYPE_A:
 				fmt.Println("A record")
 				// establish conn to root server
 				sendDNSRequest(buffer[:n], shared.ROOT_DNS_SERVERS[0])
@@ -107,6 +107,7 @@ func sendDNSRequest(data []byte, ip string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer conn.Close()
 
 	// send request
 	_, err = conn.Write(data)
@@ -123,6 +124,9 @@ func sendDNSRequest(data []byte, ip string) {
 	// 处理数据
 	dnsHeader := parseDNSRequest(buffer[:n])
 	fmt.Printf("Response: %q\n", buffer[:n])
+	if dnsHeader.Flags.TC {
+		// 重新发起TCP
+	}
 
 	fmt.Printf("%x %v %x %x %x %x\n", dnsHeader.ID, dnsHeader.Flags,
 		dnsHeader.Qdcount, dnsHeader.Ancount, dnsHeader.Nscount, dnsHeader.Arcount)
@@ -137,20 +141,6 @@ func sendDNSRequest(data []byte, ip string) {
 
 	additionalRRs, offset := parseDNSResourceRecord(buffer[:n], offset, dnsHeader.Arcount)
 	fmt.Println(additionalRRs)
-}
-
-func parseNameByOffset(data []byte, offset int) (string, int) {
-	var names []string
-	for data[offset] != 0 {
-		length := int(data[offset])
-		offset++
-		name := data[offset : offset+length]
-		names = append(names, string(name))
-		offset += length
-	}
-	res := strings.Join(names, ".")
-	offset++
-	return res, offset
 }
 
 func parseDNSRequest(data []byte) *DNSHeader {
@@ -197,19 +187,48 @@ func parseDNSQuestion(data []byte, Qdcount uint16) ([]*DNSQuestion, int) {
 	return questions, offset
 }
 
+func checkIsPointer(data []byte, offset int) (bool, uint16) {
+	if data[offset]&0xC0 == 0xC0 {
+		ptr := binary.BigEndian.Uint16(data[offset:offset+2]) - 0xC000
+		return true, ptr
+	} else {
+		return false, 0
+	}
+}
+
+func parseNameByOffset(data []byte, offset int) (string, int) {
+	var names []string
+	for {
+		if data[offset] == 0 {
+			offset++
+			break
+		}
+
+		if isPointer, ptr := checkIsPointer(data, offset); isPointer {
+			name, _ := parseNameByOffset(data, int(ptr))
+			names = append(names, name)
+			offset += 2
+			if data[offset] == 0 {
+				break
+			}
+		} else {
+			length := int(data[offset])
+			offset++
+			name := data[offset : offset+length]
+			names = append(names, string(name))
+			offset += length
+		}
+	}
+	res := strings.Join(names, ".")
+	return res, offset
+}
+
 func parseDNSResourceRecord(data []byte, offset int, count uint16) ([]*DNSResourceRecord, int) {
 	var records []*DNSResourceRecord
 	for count > 0 {
 		r := DNSResourceRecord{}
 
-		if data[offset]&0xC0 != 0xC0 {
-			r.Name, offset = parseNameByOffset(data, offset)
-
-		} else {
-			ptr := binary.BigEndian.Uint16(data[offset:offset+2]) - 0xC000
-			r.Name, _ = parseNameByOffset(data, int(ptr))
-			offset += 2
-		}
+		r.Name, offset = parseNameByOffset(data, offset)
 
 		r.RType = binary.BigEndian.Uint16(data[offset : offset+2])
 		offset += 2
@@ -224,9 +243,9 @@ func parseDNSResourceRecord(data []byte, offset int, count uint16) ([]*DNSResour
 		offset += 2
 
 		switch r.RType {
-		case shared.QTYPE_A:
-			r.ResourceData = string(data[offset : offset+int(r.ResourceDataLength)])
-		case shared.QTYPE_NS, shared.QTYPE_CNAME:
+		case shared.TYPE_A:
+			r.ResourceData = parseARecordData(data, offset, r.ResourceDataLength)
+		case shared.TYPE_NS, shared.TYPE_CNAME:
 			r.ResourceData, _ = parseNameByOffset(data, offset)
 		}
 		offset += int(r.ResourceDataLength)
@@ -236,4 +255,14 @@ func parseDNSResourceRecord(data []byte, offset int, count uint16) ([]*DNSResour
 	}
 
 	return records, offset
+}
+
+func parseARecordData(data []byte, offset int, length uint16) string {
+	var parts []string
+	for length > 0 {
+		parts = append(parts, fmt.Sprintf("%d", data[offset]))
+		offset++
+		length--
+	}
+	return strings.Join(parts, ".")
 }
