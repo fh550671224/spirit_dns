@@ -4,15 +4,17 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"reflect"
 	"spiritDNS/network"
+	"spiritDNS/shared"
 )
 
-type UDPProcessor struct {
+type UdpProcessor struct {
 	addr *net.UDPAddr
-	ctx  *Context
+	msg  *shared.DNSMessage
 }
 
-func (p *UDPProcessor) Listen() {
+func (p *UdpProcessor) Listen() {
 	addr := "0.0.0.0:53"
 
 	udpAddr, err := net.ResolveUDPAddr("udp", addr)
@@ -28,10 +30,10 @@ func (p *UDPProcessor) Listen() {
 
 	fmt.Printf("Listening on %v\n", addr)
 
-	p.HandleConnetion(conn)
+	p.HandleConnection(conn)
 }
 
-func (p *UDPProcessor) HandleConnetion(conn net.Conn) {
+func (p *UdpProcessor) HandleConnection(conn net.Conn) {
 	udpConn, ok := conn.(*net.UDPConn)
 	if !ok {
 		log.Fatal("Failed to convert to *net.UDPConn")
@@ -42,48 +44,50 @@ func (p *UDPProcessor) HandleConnetion(conn net.Conn) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		p.ctx = NewContext(buffer[:n])
-		p.addr = addr
 
-		// 处理数据
+		p.addr = addr
+		p.msg = shared.DecodeDNSMessage(buffer[:n])
+
+		if p.msg.Questions[0].Type != shared.TYPE_A {
+			continue
+		}
+
+		// 处理数据 TODO 改成goroutine
 		//go ProcessReq(p)
-		ProcessReq(p)
+		p.FindAnswers(shared.ROOT_DNS_SERVERS)
 	}
 }
 
-func (p *UDPProcessor) FindAnswers(ipList []string) ([]byte, error) {
-	data, err := network.TrySendUDPRequest(ipList, 53, p.ctx.RawData)
+func (p *UdpProcessor) FindAnswers(ipList []string) ([]byte, error) {
+	encoded, err := shared.EncodeDNSMessage(p.msg, true)
+	if err != nil {
+		return nil, fmt.Errorf("shared.EncodeDNSMessage err: %s", err.Error())
+	}
+
+	data, err := network.TrySendUDPRequest(ipList, 53, encoded)
 	if err != nil {
 		return nil, fmt.Errorf("network.TrySendUDPRequest err: %s", err.Error())
 	}
 
-	// 处理数据
-	dnsHeader := parseDNSHeader(data)
-	//fmt.Printf("Response: %q\n", data[:n])
-	if dnsHeader.Flags.TC {
-		// 重新发起TCP
-		data, err = network.TrySendTCPRequest(ipList, 53, p.ctx.RawData)
+	// TODO 处理数据
+	msg := shared.DecodeDNSMessage(data)
+
+	// TODO for test, delete
+	{
+		encoded, err = shared.EncodeDNSMessage(msg, true)
 		if err != nil {
-			return nil, fmt.Errorf("network.TrySendTCPRequest err: %s", err.Error())
+			log.Fatal(err)
 		}
-		// 重新读头
-		dnsHeader = parseDNSHeader(data)
+		//if !bytes.Equal(data, encoded) {
+		//	log.Fatal("encoded not equal to decoded")
+		//}
+
+		msgg := shared.DecodeDNSMessage(encoded)
+
+		a := reflect.DeepEqual(msg, msgg)
+
+		fmt.Println(a)
 	}
-	if dnsHeader.Flags.AA {
-		// 返回 data
-		return data, nil
-	}
-
-	_, offset := parseDNSQuestion(data, dnsHeader.QuestionCount)
-
-	answerRecords, offset := parseDNSResourceRecord(data, offset, dnsHeader.AnswerCount)
-	fmt.Println(answerRecords)
-
-	NSRecords, offset := parseDNSResourceRecord(data, offset, dnsHeader.NSCount)
-	fmt.Println(NSRecords)
-
-	additionalRecords, offset := parseDNSResourceRecord(data, offset, dnsHeader.ARCount)
-	fmt.Println(additionalRecords)
 
 	return nil, nil
 }

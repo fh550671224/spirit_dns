@@ -8,6 +8,13 @@ const (
 	TYPE_AAAA  = 28
 )
 
+const (
+	COUNT_TYPE_QUESTION = 0
+	COUNT_TYPE_ANSWER   = 1
+	COUNT_TYPE_NS       = 2
+	COUNT_TYPE_AR       = 3
+)
+
 var ROOT_DNS_SERVERS = []string{
 	"198.41.0.4",     // a.root-servers.net
 	"199.9.14.201",   // b.root-servers.net
