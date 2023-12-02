@@ -35,11 +35,11 @@ func checkIsPointer(data []byte, offset int) (bool, uint16) {
 	}
 }
 
-func decodeNameByOffset(data []byte, offset int) (string, int) {
+func decodeNameWithLength(data []byte, offset int, dataLength int) string {
 	var names []string
+	originalOffset := offset
 	for {
-		if data[offset] == 0 {
-			offset++
+		if offset-originalOffset == dataLength {
 			break
 		}
 
@@ -47,15 +47,40 @@ func decodeNameByOffset(data []byte, offset int) (string, int) {
 			name, _ := decodeNameByOffset(data, int(ptr))
 			names = append(names, name)
 			offset += 2
-			if data[offset] == 0 {
-				break
-			}
 		} else {
 			length := int(data[offset])
 			offset++
 			name := data[offset : offset+length]
 			names = append(names, string(name))
 			offset += length
+			if data[offset] == 0 {
+				offset++
+				break
+			}
+		}
+	}
+
+	return strings.Join(names, ".")
+}
+
+func decodeNameByOffset(data []byte, offset int) (string, int) {
+	var names []string
+	for {
+		if isPointer, ptr := checkIsPointer(data, offset); isPointer {
+			name, _ := decodeNameByOffset(data, int(ptr))
+			names = append(names, name)
+			offset += 2
+			break
+		} else {
+			length := int(data[offset])
+			offset++
+			name := data[offset : offset+length]
+			names = append(names, string(name))
+			offset += length
+			if data[offset] == 0 {
+				offset++
+				break
+			}
 		}
 	}
 
@@ -85,7 +110,7 @@ func decodeDNSResourceRecord(data []byte, offset int, count uint16) ([]*DNSResou
 		case TYPE_A:
 			r.ResourceData = decodeARecordData(data, offset, r.ResourceDataLength)
 		case TYPE_NS, TYPE_CNAME:
-			r.ResourceData, _ = decodeNameByOffset(data, offset)
+			r.ResourceData = decodeNameWithLength(data, offset, int(r.ResourceDataLength))
 		}
 		offset += int(r.ResourceDataLength)
 

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net"
@@ -71,6 +72,8 @@ func (p *UdpProcessor) FindAnswers(ipList []string) ([]byte, error) {
 
 	// TODO 处理数据
 	msg := shared.DecodeDNSMessage(data)
+	jsonMSG, _ := json.Marshal(msg)
+	fmt.Println(jsonMSG)
 
 	// TODO for test, delete
 	{

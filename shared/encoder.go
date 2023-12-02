@@ -98,7 +98,8 @@ func (ctx *encodeContext) wrapUdpMsg(msg *DNSMessage, lastOffset int, indices []
 }
 
 func (ctx *encodeContext) encodeDNSResourceRecords(records []*DNSResourceRecord) (indices []uint16, err error) {
-	for _, r := range records {
+	for i, r := range records {
+		fmt.Println(i)
 		ctx.encodeName(r.Name)
 
 		binary.BigEndian.PutUint16(ctx.buffer[ctx.offset:ctx.offset+2], r.Type)
@@ -120,7 +121,8 @@ func (ctx *encodeContext) encodeDNSResourceRecords(records []*DNSResourceRecord)
 				return nil, fmt.Errorf("encodeARecordData err: %s", err.Error())
 			}
 		case TYPE_NS, TYPE_CNAME:
-			ctx.encodeName(r.ResourceData)
+			length := ctx.encodeName(r.ResourceData)
+			binary.BigEndian.PutUint16(ctx.buffer[ctx.offset-length-2:ctx.offset-length], uint16(length))
 		}
 
 		indices = append(indices, uint16(ctx.offset))
@@ -168,74 +170,94 @@ func (ctx *encodeContext) encodeDNSQuestions(questions []*DNSQuestion) (indices 
 	return indices
 }
 
-func (tree *NamePtrTree) GetLongestBackwardSubsequence(names []string) [][]string {
-	var res [][]string
-	var end = len(names)
+func (tree *NamePtrTree) GetPtrStartIndex(names []string) int {
+	if len(names) == 0 {
+		return 0
+	}
 
-	flip := false
-	flag := false
+	res := []string{names[len(names)-1]}
+	if tree.Match(tree.root, res, len(res)-1) == nil {
+		return len(names)
+	}
 
-	// 对于每个sub name，获取从当前位置出发的最长命中列表
-	for i := len(names) - 1; i >= 0; i-- {
-		tmp := names[i:end]
-		match := tree.Match(tree.root, tmp, len(tmp)-1)
-		if match != nil {
-			continue
+	for i := len(names) - 2; i >= 0; i-- {
+		temp := append([]string{names[i]}, res...)
+		if tree.Match(tree.root, temp, len(temp)-1) != nil {
+			res = temp
 		} else {
-			if end-i == 1 {
-				res = append(res, names[i:end])
-				end = i
-			} else {
-				res = append(res, names[i+1:end])
-				end = i + 1
-			}
+			return i + 1
 		}
 	}
-	if end > 0 {
-		res = append(res, names[0:end])
-	}
 
-	return res
+	return 0
 }
 
-func (ctx *encodeContext) encodeName(name string) {
+func (ctx *encodeContext) encodeName(name string) int {
 	offset := ctx.offset
 	buffer := ctx.buffer
 
-	// 对于每个sub name，获取从当前位置出发的最长命中列表
-	lbs := ctx.NamePtrTree.GetLongestBackwardSubsequence(strings.Split(name, "."))
-	for i := len(lbs) - 1; i >= 0; i-- {
-		keys := lbs[i]
-
-		node := ctx.NamePtrTree.Match(ctx.NamePtrTree.root, keys, len(keys)-1)
-		if node != nil {
+	names := SplitWithoutEmpty(name, ".")
+	// 获取指针起始index，有三种情况：
+	// 1. 纯指针
+	// 2. 混合情况，前面是非指针，后面是指针
+	// 3. 纯非指针
+	ptrStartIndex := ctx.NamePtrTree.GetPtrStartIndex(names)
+	if ptrStartIndex < len(names) {
+		if ptrStartIndex == 0 {
+			// 纯指针
+			node := ctx.NamePtrTree.Match(ctx.NamePtrTree.root, names, len(names)-1)
 			// 将指针写入报文
 			tmp := 0xC000 | node.ptr
 			binary.BigEndian.PutUint16(buffer[offset:offset+2], tmp)
 			offset += 2
-			continue
 		} else {
-			// 非指针
+			// 混合情况，前面是非指针，后面是指针
+
+			// 1. 非指针部分
+			nonPtrNames := names[:ptrStartIndex]
 			// 插入树
 			ptr := uint16(offset)
-			ctx.NamePtrTree.Insert(ctx.NamePtrTree.root, keys, len(keys)-1, ptr)
-
-			// 将域名写入报文
-			for _, key := range keys {
+			ctx.NamePtrTree.Insert(ctx.NamePtrTree.root, nonPtrNames, len(nonPtrNames)-1, ptr)
+			// 将部分域名写入报文
+			for _, key := range nonPtrNames {
 				buffer[offset] = uint8(len(key))
 				offset++
 				copy(buffer[offset:offset+len(key)], key)
 				offset += len(key)
 			}
 
-			// 如果非指针，且已记录完毕，则在最后添加终止符
-			if i == 0 {
-				buffer[offset] = 0
-				offset++
-			}
+			// 2. 指针部分
+			ptrNames := names[ptrStartIndex:]
+			node := ctx.NamePtrTree.Match(ctx.NamePtrTree.root, ptrNames, len(ptrNames)-1)
+			// 将指针写入报文
+			tmp := 0xC000 | node.ptr
+			binary.BigEndian.PutUint16(buffer[offset:offset+2], tmp)
+			offset += 2
 		}
+
+	} else {
+		// 纯非指针
+		// 插入树
+		ptr := uint16(offset)
+		ctx.NamePtrTree.Insert(ctx.NamePtrTree.root, names, len(names)-1, ptr)
+
+		// 将域名写入报文
+		for _, key := range names {
+			buffer[offset] = uint8(len(key))
+			offset++
+			copy(buffer[offset:offset+len(key)], key)
+			offset += len(key)
+		}
+
+		// 已记录完毕，在最后添加终止符
+		buffer[offset] = 0
+		offset++
+
 	}
+
+	length := offset - ctx.offset
 	ctx.offset = offset
+	return length
 }
 
 func (tree *NamePtrTree) Insert(node *PtrNode, keys []string, curIndex int, ptr uint16) {
