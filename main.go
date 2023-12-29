@@ -5,5 +5,6 @@ import (
 )
 
 func main() {
-	service.StarListening()
+	service.ListenUDP()
+	service.PackDispatcher.Init()
 }

@@ -155,8 +155,8 @@ func decodeDNSFlags(flags uint16) *DNSFlags {
 	}
 }
 
-func DecodeDNSMessage(data []byte) *DNSMessage {
-	msg := &DNSMessage{}
+func DecodeDNSMessage(data []byte) DNSMessage {
+	msg := DNSMessage{}
 	msg.Header = *decodeDNSHeader(data)
 	var offset int
 	msg.Questions, offset = decodeDNSQuestion(data, msg.Header.QuestionCount)

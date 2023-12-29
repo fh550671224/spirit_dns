@@ -1,12 +1,5 @@
 package shared
 
-import "net"
-
-type DNSPacket struct {
-	Msg  DNSMessage
-	Addr net.Addr
-}
-
 type DNSMessage struct {
 	//RawData           []byte
 	Header            DNSHeader
