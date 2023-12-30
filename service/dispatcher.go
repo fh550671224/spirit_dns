@@ -1,45 +1,44 @@
 package service
 
 import (
+	"github.com/miekg/dns"
 	"net"
-	"spiritDNS/shared"
 	"sync"
 )
 
 type Packet struct {
-	DnsMsg shared.DNSMessage
+	DnsMsg dns.Msg
 	Ip     net.IP
 }
 
 var PackDispatcher *PacketDispatcher
 
 type PacketDispatcher struct {
-	listeners map[shared.DNSQuestion]chan Packet
+	listeners map[string]chan Packet
 	mu        sync.RWMutex
 }
 
-func (d *PacketDispatcher) Init() {
-	PackDispatcher = &PacketDispatcher{listeners: make(map[shared.DNSQuestion]chan Packet)}
+func InitPacketDispatcher() {
+	PackDispatcher = &PacketDispatcher{listeners: make(map[string]chan Packet)}
 }
 
-func (d *PacketDispatcher) Register(key shared.DNSQuestion, ch chan Packet) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	d.listeners[key] = ch
+func (pd *PacketDispatcher) Register(key string, ch chan Packet) {
+	pd.mu.Lock()
+	defer pd.mu.Unlock()
+	pd.listeners[key] = ch
 }
 
-func (d *PacketDispatcher) UnRegister(key shared.DNSQuestion) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	delete(d.listeners, key)
+func (pd *PacketDispatcher) UnRegister(key string) {
+	pd.mu.Lock()
+	defer pd.mu.Unlock()
+	delete(pd.listeners, key)
 }
 
-func (d *PacketDispatcher) Dispatch(pack Packet) {
-	// TODO 支持multi-question
-	q := pack.DnsMsg.Questions[0]
-	d.mu.RLock()
-	defer d.mu.RUnlock()
-	if ch, ok := d.listeners[*q]; ok {
+func (pd *PacketDispatcher) Dispatch(pack Packet) {
+	q := pack.DnsMsg.Question[0]
+	pd.mu.RLock()
+	defer pd.mu.RUnlock()
+	if ch, ok := pd.listeners[q.Name]; ok {
 		ch <- pack
 	}
 }

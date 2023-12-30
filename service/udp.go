@@ -2,9 +2,9 @@ package service
 
 import (
 	"fmt"
+	"github.com/miekg/dns"
 	"log"
 	"net"
-	"spiritDNS/shared"
 )
 
 func ListenUDP() {
@@ -31,26 +31,32 @@ func HandleConnectionUDP(conn net.UDPConn) {
 	for {
 		n, addr, err := conn.ReadFromUDP(buffer)
 		if err != nil {
+			log.Fatal(err, addr)
+		}
+
+		msg := new(dns.Msg)
+		err = msg.Unpack(buffer[:n])
+		if err != nil {
 			log.Fatal(err)
 		}
-		msg := shared.DecodeDNSMessage(buffer[:n])
 
-		// TODO 支持常见的类型
-		if msg.Questions[0].Type != shared.TYPE_A {
-			continue
-		}
-
-		if msg.Header.Flags.QR {
-			// 查询，分配一个worker来处理
-			go Work(&WorkContext{
-				ClientAddr:  addr.IP,
-				ClientQuery: msg,
-			})
-		} else {
+		if msg.MsgHdr.Response {
 			// 答案，分发给相应worker
 			PackDispatcher.Dispatch(Packet{
-				DnsMsg: msg,
+				DnsMsg: *msg,
 				Ip:     addr.IP,
+			})
+		} else {
+			// 查询，分配一个worker来处理
+
+			// TODO 添加其他Opcode
+			if msg.Opcode != 0 {
+				continue
+			}
+
+			go Work(&WorkContext{
+				ClientAddr:  addr.IP,
+				ClientQuery: *msg,
 			})
 		}
 	}
@@ -73,12 +79,12 @@ func sendUDP(data []byte, addr *net.UDPAddr) error {
 	return nil
 }
 
-func TrySendUDP(ipList []string, port int, data []byte) error {
+func TrySendUDP(ipList []string, data []byte) error {
 	for i := 0; i < len(ipList); i++ {
 		ip := ipList[i]
 		err := sendUDP(data, &net.UDPAddr{
 			IP:   net.ParseIP(ipList[i]),
-			Port: port,
+			Port: 53,
 		})
 
 		if err != nil {

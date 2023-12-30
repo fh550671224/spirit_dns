@@ -5,6 +5,6 @@ import (
 )
 
 func main() {
+	service.InitPacketDispatcher()
 	service.ListenUDP()
-	service.PackDispatcher.Init()
 }
