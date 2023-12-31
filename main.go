@@ -6,5 +6,8 @@ import (
 
 func main() {
 	service.InitPacketDispatcher()
+	service.InitCache()
+
 	service.ListenUDP()
+
 }

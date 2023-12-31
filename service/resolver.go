@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"github.com/miekg/dns"
+	"math"
 	"net"
 	"spiritDNS/shared"
 )
@@ -17,6 +18,18 @@ func Resolve(clientQuery *dns.Msg) (*dns.Msg, error) {
 		RecursionDesired:   clientQuery.RecursionDesired,
 		RecursionAvailable: true,
 		Rcode:              0,
+	}
+
+	if len(clientQuery.Question) == 0 {
+		resp.MsgHdr.Rcode = dns.RcodeFormatError
+		return resp, nil
+	}
+
+	question := clientQuery.Question[0]
+
+	if a, ok := answerCache.Get(question); ok {
+		resp.Answer = a.answers
+		return resp, nil
 	}
 
 	queryMsgData, err := clientQuery.Pack()
@@ -85,6 +98,17 @@ func Resolve(clientQuery *dns.Msg) (*dns.Msg, error) {
 				}
 			}
 
+			// 存入cache
+			var ttl uint32
+			ttl = math.MaxUint32
+			for _, a := range answers {
+				if ttl > a.Header().Ttl {
+					ttl = a.Header().Ttl
+				}
+			}
+			answerCache.Store(question, AnswerList{answers: answers, ttl: ttl})
+
+			// 返回结果
 			resp.Answer = answers
 			return resp, nil
 		}
