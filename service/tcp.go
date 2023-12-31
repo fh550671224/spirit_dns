@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/binary"
 	"fmt"
+	"github.com/miekg/dns"
 	"log"
 	"net"
 )
@@ -61,7 +62,7 @@ import (
 //func sendTCP(data []byte, addr *net.TCPAddr) error {
 //	tcpConn, err := net.DialTCP("tcp", nil, addr)
 //	if err != nil {
-//		return fmt.Errorf("net.DialTCP err: %s", err.Error())
+//		return fmt.Errorf("net.DialTCP err: %v",err)
 //
 //	}
 //	//defer tcpConn.Close()
@@ -74,7 +75,7 @@ import (
 //
 //	_, err = tcpConn.Write(tcpData)
 //	if err != nil {
-//		return fmt.Errorf("net.Write err: %s", err.Error())
+//		return fmt.Errorf("net.Write err: %v",err)
 //	}
 //
 //	return nil
@@ -99,10 +100,10 @@ import (
 //	return fmt.Errorf("no available ip")
 //}
 
-func sendTCPRequest(data []byte, addr *net.TCPAddr) ([]byte, error) {
+func sendTCPRequest(data []byte, addr *net.TCPAddr) (*Packet, error) {
 	tcpConn, err := net.DialTCP("tcp", nil, addr)
 	if err != nil {
-		return nil, fmt.Errorf("net.DialTCP err: %s", err.Error())
+		return nil, fmt.Errorf("net.DialTCP err: %v", err)
 
 	}
 	defer tcpConn.Close()
@@ -115,33 +116,39 @@ func sendTCPRequest(data []byte, addr *net.TCPAddr) ([]byte, error) {
 
 	_, err = tcpConn.Write(tcpData)
 	if err != nil {
-		return nil, fmt.Errorf("net.Write err: %s", err.Error())
+		return nil, fmt.Errorf("net.Write err: %v", err)
 
 	}
 
 	buffer := make([]byte, 4096)
 	_, err = tcpConn.Read(buffer)
 	if err != nil {
-		return nil, fmt.Errorf("net.Read err: %s", err.Error())
+		return nil, fmt.Errorf("net.Read err: %v", err)
 	}
 	respLength := binary.BigEndian.Uint16(buffer[0:2])
 
-	return buffer[2 : 2+respLength], nil
+	msg := new(dns.Msg)
+	err = msg.Unpack(buffer[2 : 2+respLength])
+	if err != nil {
+		return nil, fmt.Errorf("dns.Unpack err: %v", err)
+	}
+
+	return &Packet{
+		DnsMsg: *msg,
+		Ip:     addr.IP.String(),
+		Port:   addr.Port,
+	}, nil
 }
 
-func TrySendTCPRequest(ipList []string, port int, data []byte) ([]byte, error) {
-	for i := 0; i < len(ipList); i++ {
-		ip := ipList[i]
-		buffer, err := sendTCPRequest(data, &net.TCPAddr{
-			IP:   net.ParseIP(ipList[i]),
-			Port: port,
-		})
+func TrySendTCPRequest(addrList []*net.TCPAddr, data []byte) (*Packet, error) {
+	for _, addr := range addrList {
+		pack, err := sendTCPRequest(data, addr)
 
 		if err != nil {
-			log.Printf("%s sendTCPRequest err: %v, trying next ip", ip, err)
+			log.Printf("%s sendTCPRequest err: %v, trying next addr", addr.String(), err)
 		} else {
-			log.Printf("%s sendTCPRequest success", ip)
-			return buffer, nil
+			log.Printf("%s sendTCPRequest success", addr.String())
+			return pack, nil
 		}
 	}
 

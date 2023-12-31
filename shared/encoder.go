@@ -44,7 +44,7 @@ func EncodeDNSMessage(msg *DNSMessage, isUdp bool) ([]byte, error) {
 	// answer record
 	indices, err := ctx.encodeDNSResourceRecords(msg.AnswerRecords)
 	if err != nil {
-		return nil, fmt.Errorf("encodeDNSResourceRecords err: %s", err.Error())
+		return nil, fmt.Errorf("encodeDNSResourceRecords err: %v", err)
 	}
 	udpSafeCount = getUdpSafeCount(indices)
 	if isUdp && udpSafeCount < msg.Header.AnswerCount {
@@ -54,7 +54,7 @@ func EncodeDNSMessage(msg *DNSMessage, isUdp bool) ([]byte, error) {
 	// ns record
 	indices, err = ctx.encodeDNSResourceRecords(msg.NSRecords)
 	if err != nil {
-		return nil, fmt.Errorf("encodeDNSResourceRecords err: %s", err.Error())
+		return nil, fmt.Errorf("encodeDNSResourceRecords err: %v", err)
 	}
 	udpSafeCount = getUdpSafeCount(indices)
 	if isUdp && udpSafeCount < msg.Header.NSCount {
@@ -64,7 +64,7 @@ func EncodeDNSMessage(msg *DNSMessage, isUdp bool) ([]byte, error) {
 	// additional record
 	indices, err = ctx.encodeDNSResourceRecords(msg.AdditionalRecords)
 	if err != nil {
-		return nil, fmt.Errorf("encodeDNSResourceRecords err: %s", err.Error())
+		return nil, fmt.Errorf("encodeDNSResourceRecords err: %v", err)
 	}
 	udpSafeCount = getUdpSafeCount(indices)
 	if isUdp && udpSafeCount < msg.Header.ARCount {
@@ -118,7 +118,7 @@ func (ctx *encodeContext) encodeDNSResourceRecords(records []*DNSResourceRecord)
 		case TYPE_A:
 			err = ctx.encodeARecordData(r.ResourceData)
 			if err != nil {
-				return nil, fmt.Errorf("encodeARecordData err: %s", err.Error())
+				return nil, fmt.Errorf("encodeARecordData err: %v", err)
 			}
 		case TYPE_NS, TYPE_CNAME:
 			length := ctx.encodeName(r.ResourceData)
@@ -136,7 +136,7 @@ func (ctx *encodeContext) encodeARecordData(data string) error {
 	for _, part := range parts {
 		tmp, err := strconv.Atoi(part)
 		if err != nil {
-			return fmt.Errorf(" strconv.ParseInt err: %s", err.Error())
+			return fmt.Errorf(" strconv.ParseInt err: %v", err)
 		}
 		ctx.buffer[ctx.offset] = uint8(tmp)
 		ctx.offset++

@@ -40,32 +40,50 @@ func HandleConnectionUDP(conn net.UDPConn) {
 			log.Fatal(err)
 		}
 
-		if msg.MsgHdr.Response {
-			// 答案，分发给相应worker
-			PackDispatcher.Dispatch(Packet{
-				DnsMsg: *msg,
-				Ip:     addr.IP,
-			})
-		} else {
-			// 查询，分配一个worker来处理
+		// TODO 支持所有opcode
+		if msg.Opcode != 0 {
+			continue
+		}
 
-			// TODO 添加其他Opcode
-			if msg.Opcode != 0 {
-				continue
+		//  交给goroutine异步解析
+		go func() {
+			answer, err := Resolve(msg)
+			if err != nil {
+				log.Printf("Resolve err: %v\n", err)
 			}
 
-			go Work(&WorkContext{
-				ClientAddr:  addr.IP,
-				ClientQuery: *msg,
-			})
-		}
+			// 返回结果给客户端
+			answerData, err := answer.Pack()
+			if err != nil {
+				log.Printf("dns.Pack err: %v\n", err)
+			}
+
+			dispatcher.Dispatch(addr, answerData)
+		}()
+
+		// 开启goroutine阻塞等待结果
+		go func() {
+			ch := make(chan []byte)
+			dispatcher.Register(addr, ch)
+			defer dispatcher.UnRegister(addr)
+
+			select {
+			case data := <-ch:
+				_, err = conn.WriteToUDP(data, addr)
+				if err != nil {
+					log.Fatalf("net.WriteToUDP err: %v", err)
+				}
+				return
+			}
+		}()
+
 	}
 }
 
-func sendUDP(data []byte, addr *net.UDPAddr) error {
+func sendUDP(data []byte, addr *net.UDPAddr) (*Packet, error) {
 	conn, err := net.DialUDP("udp", nil, addr)
 	if err != nil {
-		return fmt.Errorf("net.DialUDP err: %s", err.Error())
+		return nil, fmt.Errorf("net.DialUDP err: %v", err)
 
 	}
 	defer conn.Close()
@@ -73,26 +91,38 @@ func sendUDP(data []byte, addr *net.UDPAddr) error {
 	// send request
 	_, err = conn.Write(data)
 	if err != nil {
-		return fmt.Errorf("net.Write err: %s", err.Error())
+		return nil, fmt.Errorf("net.Write err: %v", err)
 	}
 
-	return nil
+	buffer := make([]byte, 1024)
+	n, _, err := conn.ReadFromUDP(buffer)
+	if err != nil {
+		return nil, fmt.Errorf("net.ReadFromUDP err: %v", err)
+	}
+
+	msg := new(dns.Msg)
+	err = msg.Unpack(buffer[:n])
+	if err != nil {
+		return nil, fmt.Errorf("dns.Unpack err: %v", err)
+	}
+
+	return &Packet{
+		DnsMsg: *msg,
+		Ip:     addr.IP.String(),
+		Port:   addr.Port,
+	}, nil
 }
 
-func TrySendUDP(ipList []string, data []byte) error {
-	for i := 0; i < len(ipList); i++ {
-		ip := ipList[i]
-		err := sendUDP(data, &net.UDPAddr{
-			IP:   net.ParseIP(ipList[i]),
-			Port: 53,
-		})
+func TrySendUDP(addrList []*net.UDPAddr, data []byte) (*Packet, error) {
+	for _, addr := range addrList {
+		pack, err := sendUDP(data, addr)
 
 		if err != nil {
-			log.Printf("%s sendUDPRequest err: %v, trying next ip", ip, err)
+			log.Printf("%s sendUDPRequest err: %v, trying next addr", addr.String(), err)
 		} else {
-			log.Printf("%s sendUDPRequest success", ip)
-			return nil
+			log.Printf("%s sendUDPRequest success", addr.String())
+			return pack, nil
 		}
 	}
-	return fmt.Errorf("no available ip")
+	return nil, fmt.Errorf("no available addr")
 }

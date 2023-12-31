@@ -1,44 +1,37 @@
 package service
 
 import (
-	"github.com/miekg/dns"
 	"net"
 	"sync"
 )
 
-type Packet struct {
-	DnsMsg dns.Msg
-	Ip     net.IP
-}
+var dispatcher *Dispatcher
 
-var PackDispatcher *PacketDispatcher
-
-type PacketDispatcher struct {
-	listeners map[string]chan Packet
+type Dispatcher struct {
+	listeners map[*net.UDPAddr]chan []byte
 	mu        sync.RWMutex
 }
 
 func InitPacketDispatcher() {
-	PackDispatcher = &PacketDispatcher{listeners: make(map[string]chan Packet)}
+	dispatcher = &Dispatcher{listeners: make(map[*net.UDPAddr]chan []byte)}
 }
 
-func (pd *PacketDispatcher) Register(key string, ch chan Packet) {
+func (pd *Dispatcher) Register(key *net.UDPAddr, ch chan []byte) {
 	pd.mu.Lock()
 	defer pd.mu.Unlock()
 	pd.listeners[key] = ch
 }
 
-func (pd *PacketDispatcher) UnRegister(key string) {
+func (pd *Dispatcher) UnRegister(key *net.UDPAddr) {
 	pd.mu.Lock()
 	defer pd.mu.Unlock()
 	delete(pd.listeners, key)
 }
 
-func (pd *PacketDispatcher) Dispatch(pack Packet) {
-	q := pack.DnsMsg.Question[0]
+func (pd *Dispatcher) Dispatch(key *net.UDPAddr, data []byte) {
 	pd.mu.RLock()
 	defer pd.mu.RUnlock()
-	if ch, ok := pd.listeners[q.Name]; ok {
-		ch <- pack
+	if ch, ok := pd.listeners[key]; ok {
+		ch <- data
 	}
 }
