@@ -3,7 +3,6 @@ package service
 import (
 	"fmt"
 	"github.com/miekg/dns"
-	"math"
 	"net"
 	"spiritDNS/shared"
 )
@@ -99,14 +98,7 @@ func Resolve(clientQuery *dns.Msg) (*dns.Msg, error) {
 			}
 
 			// 存入cache
-			var ttl uint32
-			ttl = math.MaxUint32
-			for _, a := range answers {
-				if ttl > a.Header().Ttl {
-					ttl = a.Header().Ttl
-				}
-			}
-			answerCache.Store(question, AnswerList{answers: answers, ttl: ttl})
+			go answerCache.Store(question, answers)
 
 			// 返回结果
 			resp.Answer = answers
