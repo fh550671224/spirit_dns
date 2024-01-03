@@ -2,6 +2,7 @@ package service
 
 import (
 	"github.com/miekg/dns"
+	"math"
 	"sync"
 	"time"
 )
@@ -43,22 +44,27 @@ func InitCache() {
 	}()
 }
 
-func (ac *AnswerCache) Store(key dns.Question, value AnswerList) {
+func (ac *AnswerCache) Store(key dns.Question, answers []dns.RR) {
+	var ttl uint32
+	ttl = math.MaxUint32
+	for _, a := range answers {
+		if ttl > a.Header().Ttl {
+			ttl = a.Header().Ttl
+		}
+	}
+
 	ac.mu.Lock()
 	defer ac.mu.Unlock()
 
-	ac.questionAnswerMap[key] = value
+	ac.questionAnswerMap[key] = AnswerList{
+		answers: answers,
+		ttl:     ttl,
+	}
 }
 
 func (ac *AnswerCache) Get(key dns.Question) (AnswerList, bool) {
 	ac.mu.RLock()
 	defer ac.mu.RUnlock()
-
-	//if a, ok := ac.questionAnswerMap[key]; ok {
-	//	return &a
-	//} else {
-	//	return nil
-	//}
 
 	a, ok := ac.questionAnswerMap[key]
 	return a, ok
