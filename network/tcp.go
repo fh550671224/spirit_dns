@@ -6,7 +6,7 @@ import (
 	"net"
 )
 
-func SendTCPRequest(data []byte, addr *net.TCPAddr) ([]byte, error) {
+func SendTCP(data []byte, addr *net.TCPAddr) ([]byte, error) {
 	tcpConn, err := net.DialTCP("tcp", nil, addr)
 	if err != nil {
 		return nil, fmt.Errorf("net.DialTCP err: %v", err)

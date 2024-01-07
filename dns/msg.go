@@ -215,3 +215,12 @@ func (msg *Msg) SetQuestion(name string, qtype uint16) {
 		QClass: ClassINET,
 	})
 }
+
+func (msg *Msg) IsInvalid() bool {
+	if msg.MsgHdr.Response {
+		if len(msg.Answer) == 0 && len(msg.Ns) == 0 {
+			return true
+		}
+	}
+	return false
+}

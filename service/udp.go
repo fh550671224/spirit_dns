@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 	"spiritDNS/dns"
+	"spiritDNS/network"
 	"spiritDNS/shared"
 )
 
@@ -81,49 +82,33 @@ func HandleConnectionUDP(conn net.UDPConn) {
 	}
 }
 
-func sendUDP(data []byte, addr *net.UDPAddr) (*Packet, error) {
-	conn, err := net.DialUDP("udp", nil, addr)
-	if err != nil {
-		return nil, fmt.Errorf("net.DialUDP err: %v", err)
-
-	}
-	defer conn.Close()
-
-	// send request
-	_, err = conn.Write(data)
-	if err != nil {
-		return nil, fmt.Errorf("net.Write err: %v", err)
-	}
-
-	buffer := make([]byte, 1024)
-	n, _, err := conn.ReadFromUDP(buffer)
-	if err != nil {
-		return nil, fmt.Errorf("net.ReadFromUDP err: %v", err)
-	}
-
-	msg := new(dns.Msg)
-	err = msg.Unpack(buffer[:n])
-	if err != nil {
-		return nil, fmt.Errorf("dns.Unpack err: %v", err)
-	}
-
-	return &Packet{
-		DnsMsg: *msg,
-		Ip:     addr.IP.String(),
-		Port:   addr.Port,
-	}, nil
-}
-
 func TrySendUDP(addrList []*net.UDPAddr, data []byte) (*Packet, error) {
 	for _, addr := range addrList {
-		pack, err := sendUDP(data, addr)
-
+		resp, err := network.SendUDP(data, addr)
 		if err != nil {
 			log.Printf("%s sendUDPRequest err: %v, trying next addr", addr.String(), err)
-		} else {
-			log.Printf("%s sendUDPRequest success", addr.String())
-			return pack, nil
+			continue
 		}
+
+		log.Printf("%s sendUDPRequest success", addr.String())
+
+		msg := new(dns.Msg)
+		err = msg.Unpack(resp)
+		if err != nil {
+			return nil, fmt.Errorf("dns.Unpack err: %v", err)
+		}
+
+		if msg.IsInvalid() {
+			log.Printf("%s has no Answer or Ns, trying next addr", addr.String())
+			continue
+		}
+
+		return &Packet{
+			DnsMsg: msg,
+			Ip:     addr.IP.String(),
+			Port:   addr.Port,
+		}, nil
 	}
+
 	return nil, fmt.Errorf("no available addr")
 }
