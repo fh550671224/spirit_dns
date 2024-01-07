@@ -2,12 +2,11 @@ package service
 
 import (
 	"fmt"
-	"github.com/miekg/dns"
 	"net"
-	"spiritDNS/shared"
+	"spiritDNS/dns"
 )
 
-func Resolve(clientQuery *dns.Msg) (*dns.Msg, error) {
+func Resolve(clientQuery *dns.Msg, hostList []string) (*dns.Msg, error) {
 	resp := new(dns.Msg)
 	resp.MsgHdr = dns.MsgHdr{
 		Id:                 clientQuery.Id,
@@ -18,6 +17,7 @@ func Resolve(clientQuery *dns.Msg) (*dns.Msg, error) {
 		RecursionAvailable: true,
 		Rcode:              0,
 	}
+	resp.Question = clientQuery.Question
 
 	if len(clientQuery.Question) == 0 {
 		resp.MsgHdr.Rcode = dns.RcodeFormatError
@@ -37,7 +37,7 @@ func Resolve(clientQuery *dns.Msg) (*dns.Msg, error) {
 	}
 
 	var addrList []*net.UDPAddr
-	for _, v := range shared.ROOT_DNS_SERVERS {
+	for _, v := range hostList {
 		addrList = append(addrList, &net.UDPAddr{
 			IP:   net.ParseIP(v),
 			Port: 53,
@@ -87,7 +87,7 @@ func Resolve(clientQuery *dns.Msg) (*dns.Msg, error) {
 					if Cr, ok := ans.(*dns.CNAME); ok {
 						m := new(dns.Msg)
 						m.SetQuestion(Cr.Target, dns.TypeA)
-						res, err := Resolve(m)
+						res, err := Resolve(m, []string{pack.Ip})
 						if err != nil {
 							return nil, err
 						}
@@ -128,7 +128,7 @@ func Resolve(clientQuery *dns.Msg) (*dns.Msg, error) {
 				// 需要查询NS记录里的域名解析
 				m := new(dns.Msg)
 				m.SetQuestion(msg.Ns[0].Header().Name, dns.TypeA)
-				res, err := Resolve(m)
+				res, err := Resolve(m, []string{pack.Ip})
 				if err != nil {
 					return nil, err
 				}

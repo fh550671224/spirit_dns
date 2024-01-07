@@ -54,3 +54,11 @@ func IsOverlapping(str, substr1, substr2 string) bool {
 	// 重叠的条件是第一个子字符串的结束位置在第二个子字符串的开始位置之后
 	return (pos1 < pos2 && endPos1 > pos2) || (pos2 < pos1 && endPos2 > pos1)
 }
+
+func CloneSlice[E any, S ~[]E](s S) S {
+	if s == nil {
+		return nil
+	}
+
+	return append(S(nil), s...)
+}

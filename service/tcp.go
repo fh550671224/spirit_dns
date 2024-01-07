@@ -3,9 +3,9 @@ package service
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/miekg/dns"
 	"log"
 	"net"
+	"spiritDNS/dns"
 )
 
 //func ListenTCP() {

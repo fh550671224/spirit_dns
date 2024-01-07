@@ -2,9 +2,10 @@ package service
 
 import (
 	"fmt"
-	"github.com/miekg/dns"
 	"log"
 	"net"
+	"spiritDNS/dns"
+	"spiritDNS/shared"
 )
 
 func ListenUDP() {
@@ -47,7 +48,7 @@ func HandleConnectionUDP(conn net.UDPConn) {
 
 		//  交给goroutine异步解析
 		go func() {
-			answer, err := Resolve(msg)
+			answer, err := Resolve(msg, shared.ROOT_DNS_SERVERS)
 			if err != nil {
 				log.Printf("Resolve err: %v\n", err)
 			}

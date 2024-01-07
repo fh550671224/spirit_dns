@@ -1,8 +1,8 @@
 package service
 
 import (
-	"github.com/miekg/dns"
 	"math"
+	"spiritDNS/dns"
 	"sync"
 	"time"
 )
