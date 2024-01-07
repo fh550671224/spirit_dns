@@ -9,9 +9,9 @@ type Msg struct {
 }
 
 type Question struct {
-	Name  string
-	Type  uint16
-	Class uint16
+	Name   string
+	QType  uint16
+	QClass uint16
 }
 
 type MsgHdr struct {
@@ -37,11 +37,11 @@ func (q *Question) pack(buf []byte, off int, compression map[string]uint16) (int
 	if err != nil {
 		return off, err
 	}
-	off, err = packUint16(q.Type, buf, off)
+	off, err = packUint16(q.QType, buf, off)
 	if err != nil {
 		return off, err
 	}
-	off, err = packUint16(q.Class, buf, off)
+	off, err = packUint16(q.QClass, buf, off)
 	if err != nil {
 		return off, err
 	}
@@ -180,11 +180,11 @@ func (msg *Msg) Unpack(data []byte) (err error) {
 		if err != nil {
 			return err
 		}
-		q.Type, off, err = unpackUint16(data, off)
+		q.QType, off, err = unpackUint16(data, off)
 		if err != nil {
 			return err
 		}
-		q.Class, off, err = unpackUint16(data, off)
+		q.QClass, off, err = unpackUint16(data, off)
 		if err != nil {
 			return err
 		}
@@ -210,8 +210,8 @@ func (msg *Msg) Unpack(data []byte) (err error) {
 
 func (msg *Msg) SetQuestion(name string, qtype uint16) {
 	msg.Question = append(msg.Question, Question{
-		Name:  name,
-		Type:  qtype,
-		Class: ClassINET,
+		Name:   name,
+		QType:  qtype,
+		QClass: ClassINET,
 	})
 }

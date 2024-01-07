@@ -22,9 +22,9 @@ func TestPack(t *testing.T) {
 		},
 		Question: []Question{
 			{
-				Name:  "www.baidu.com.",
-				Type:  1,
-				Class: 1,
+				Name:   "www.baidu.com.",
+				QType:  1,
+				QClass: 1,
 			},
 		},
 		Answer: []RR{

@@ -41,7 +41,7 @@ import (
 //		msg := shared.DecodeDNSMessage(buffer[:n])
 //
 //		// TODO 支持常见的类型
-//		if msg.Questions[0].Type != shared.TYPE_A {
+//		if msg.Questions[0].QType != shared.TYPE_A {
 //			continue
 //		}
 //
