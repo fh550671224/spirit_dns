@@ -1,11 +1,11 @@
 package service
 
 import (
-	"encoding/binary"
 	"fmt"
-	"github.com/miekg/dns"
 	"log"
 	"net"
+	"spiritDNS/dns"
+	"spiritDNS/network"
 )
 
 //func ListenTCP() {
@@ -41,7 +41,7 @@ import (
 //		msg := shared.DecodeDNSMessage(buffer[:n])
 //
 //		// TODO 支持常见的类型
-//		if msg.Questions[0].Type != shared.TYPE_A {
+//		if msg.Questions[0].QType != shared.TYPE_A {
 //			continue
 //		}
 //
@@ -100,56 +100,31 @@ import (
 //	return fmt.Errorf("no available ip")
 //}
 
-func sendTCPRequest(data []byte, addr *net.TCPAddr) (*Packet, error) {
-	tcpConn, err := net.DialTCP("tcp", nil, addr)
-	if err != nil {
-		return nil, fmt.Errorf("net.DialTCP err: %v", err)
-
-	}
-	defer tcpConn.Close()
-
-	dataLength := len(data)
-	tcpData := make([]byte, 2+dataLength)
-	tcpData[0] = byte(dataLength >> 8)
-	tcpData[1] = byte(dataLength & 0xff)
-	copy(tcpData[2:], data)
-
-	_, err = tcpConn.Write(tcpData)
-	if err != nil {
-		return nil, fmt.Errorf("net.Write err: %v", err)
-
-	}
-
-	buffer := make([]byte, 4096)
-	_, err = tcpConn.Read(buffer)
-	if err != nil {
-		return nil, fmt.Errorf("net.Read err: %v", err)
-	}
-	respLength := binary.BigEndian.Uint16(buffer[0:2])
-
-	msg := new(dns.Msg)
-	err = msg.Unpack(buffer[2 : 2+respLength])
-	if err != nil {
-		return nil, fmt.Errorf("dns.Unpack err: %v", err)
-	}
-
-	return &Packet{
-		DnsMsg: *msg,
-		Ip:     addr.IP.String(),
-		Port:   addr.Port,
-	}, nil
-}
-
 func TrySendTCPRequest(addrList []*net.TCPAddr, data []byte) (*Packet, error) {
 	for _, addr := range addrList {
-		pack, err := sendTCPRequest(data, addr)
-
+		resp, err := network.SendTCP(data, addr)
 		if err != nil {
 			log.Printf("%s sendTCPRequest err: %v, trying next addr", addr.String(), err)
-		} else {
-			log.Printf("%s sendTCPRequest success", addr.String())
-			return pack, nil
+			continue
 		}
+		log.Printf("%s sendTCPRequest success", addr.String())
+
+		msg := new(dns.Msg)
+		err = msg.Unpack(resp)
+		if err != nil {
+			return nil, fmt.Errorf("dns.Unpack err: %v", err)
+		}
+
+		if msg.IsInvalid() {
+			log.Printf("%s has no Answer or Ns, trying next addr", addr.String())
+			continue
+		}
+
+		return &Packet{
+			DnsMsg: msg,
+			Ip:     addr.IP.String(),
+			Port:   addr.Port,
+		}, nil
 	}
 
 	return nil, fmt.Errorf("no available ip")

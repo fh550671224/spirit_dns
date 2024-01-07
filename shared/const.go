@@ -1,18 +1,7 @@
 package shared
 
 const (
-	TYPE_A     = 1
-	TYPE_NS    = 2
-	TYPE_CNAME = 5
-	TYPE_PTR   = 12
-	TYPE_AAAA  = 28
-)
-
-const (
-	COUNT_TYPE_QUESTION = 0
-	COUNT_TYPE_ANSWER   = 1
-	COUNT_TYPE_NS       = 2
-	COUNT_TYPE_AR       = 3
+	MaxLookUpTime = 50
 )
 
 var ROOT_DNS_SERVERS = []string{
