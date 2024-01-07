@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"spiritDNS/dns"
+	"spiritDNS/shared"
 )
 
 func Resolve(clientQuery *dns.Msg, hostList []string) (*dns.Msg, error) {
@@ -48,7 +49,7 @@ func Resolve(clientQuery *dns.Msg, hostList []string) (*dns.Msg, error) {
 		return nil, fmt.Errorf("TrySendUDP err: %v", err)
 	}
 
-	for {
+	for i := 0; i < shared.MaxLookUpTime; i++ {
 		ip := pack.Ip
 		port := pack.Port
 		msg := pack.DnsMsg
@@ -87,11 +88,12 @@ func Resolve(clientQuery *dns.Msg, hostList []string) (*dns.Msg, error) {
 					if Cr, ok := ans.(*dns.CNAME); ok {
 						m := new(dns.Msg)
 						m.SetQuestion(Cr.Target, dns.TypeA)
-						res, err := Resolve(m, []string{pack.Ip})
+						res, err := Resolve(m, hostList)
 						if err != nil {
 							return nil, err
 						}
-						temp = append(temp, res.Answer...)
+
+						answers = append(answers, res.Answer...)
 					}
 
 				}
@@ -150,4 +152,6 @@ func Resolve(clientQuery *dns.Msg, hostList []string) (*dns.Msg, error) {
 
 		}
 	}
+
+	return nil, fmt.Errorf("not resolved")
 }
