@@ -82,15 +82,18 @@ func HandleConnectionUDP(conn net.UDPConn) {
 	}
 }
 
-func TrySendUDP(addrList []*net.UDPAddr, data []byte) (*Packet, error) {
-	for _, addr := range addrList {
-		resp, err := network.SendUDP(data, addr)
+func TrySendUDP(ipList []string, data []byte) (*dns.Msg, error) {
+	for _, ip := range ipList {
+		resp, err := network.SendUDP(data, &net.UDPAddr{
+			IP:   net.ParseIP(ip),
+			Port: shared.DefaultPort,
+		})
 		if err != nil {
-			log.Printf("%s sendUDPRequest err: %v, trying next addr", addr.String(), err)
+			log.Printf("%s sendUDPRequest err: %v, trying next ip", ip, err)
 			continue
 		}
 
-		log.Printf("%s sendUDPRequest success", addr.String())
+		log.Printf("%s sendUDPRequest success", ip)
 
 		msg := new(dns.Msg)
 		err = msg.Unpack(resp)
@@ -99,16 +102,12 @@ func TrySendUDP(addrList []*net.UDPAddr, data []byte) (*Packet, error) {
 		}
 
 		if msg.IsInvalid() {
-			log.Printf("%s has no Answer or Ns, trying next addr", addr.String())
+			log.Printf("%s has no Answer or Ns, trying next ip", ip)
 			continue
 		}
 
-		return &Packet{
-			DnsMsg: msg,
-			Ip:     addr.IP.String(),
-			Port:   addr.Port,
-		}, nil
+		return msg, nil
 	}
 
-	return nil, fmt.Errorf("no available addr")
+	return nil, fmt.Errorf("no available ip")
 }

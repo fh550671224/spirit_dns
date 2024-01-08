@@ -2,6 +2,8 @@ package shared
 
 const (
 	MaxLookUpTime = 50
+
+	DefaultPort = 53
 )
 
 var ROOT_DNS_SERVERS = []string{

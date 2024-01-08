@@ -6,6 +6,7 @@ import (
 	"net"
 	"spiritDNS/dns"
 	"spiritDNS/network"
+	"spiritDNS/shared"
 )
 
 //func ListenTCP() {
@@ -100,14 +101,17 @@ import (
 //	return fmt.Errorf("no available ip")
 //}
 
-func TrySendTCPRequest(addrList []*net.TCPAddr, data []byte) (*Packet, error) {
-	for _, addr := range addrList {
-		resp, err := network.SendTCP(data, addr)
+func TrySendTCPRequest(ipList []string, data []byte) (*dns.Msg, error) {
+	for _, ip := range ipList {
+		resp, err := network.SendTCP(data, &net.TCPAddr{
+			IP:   net.ParseIP(ip),
+			Port: shared.DefaultPort,
+		})
 		if err != nil {
-			log.Printf("%s sendTCPRequest err: %v, trying next addr", addr.String(), err)
+			log.Printf("%s sendTCPRequest err: %v, trying next ip", ip, err)
 			continue
 		}
-		log.Printf("%s sendTCPRequest success", addr.String())
+		log.Printf("%s sendTCPRequest success", ip)
 
 		msg := new(dns.Msg)
 		err = msg.Unpack(resp)
@@ -116,15 +120,11 @@ func TrySendTCPRequest(addrList []*net.TCPAddr, data []byte) (*Packet, error) {
 		}
 
 		if msg.IsInvalid() {
-			log.Printf("%s has no Answer or Ns, trying next addr", addr.String())
+			log.Printf("%s has no Answer or Ns, trying next ip", ip)
 			continue
 		}
 
-		return &Packet{
-			DnsMsg: msg,
-			Ip:     addr.IP.String(),
-			Port:   addr.Port,
-		}, nil
+		return msg, nil
 	}
 
 	return nil, fmt.Errorf("no available ip")
