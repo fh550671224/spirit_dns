@@ -52,6 +52,7 @@ func HandleConnectionUDP(conn net.UDPConn) {
 			answer, err := Resolve(msg, shared.ROOT_DNS_SERVERS)
 			if err != nil {
 				log.Printf("Resolve err: %v\n", err)
+				return
 			}
 
 			// 返回结果给客户端
