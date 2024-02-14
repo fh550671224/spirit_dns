@@ -1,6 +1,7 @@
 package main
 
 import (
+	"spiritDNS/client"
 	"spiritDNS/service"
 )
 
@@ -8,6 +9,8 @@ func main() {
 	service.InitPacketDispatcher()
 	service.InitCache()
 
-	service.ListenUDP()
+	client.InitRedis()
+	defer client.CloseRedis()
 
+	service.ListenUDP()
 }

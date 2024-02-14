@@ -2,8 +2,8 @@ package service
 
 import (
 	"fmt"
+	"github.com/fh550671224/spirit_dns_public"
 	"net"
-	"spiritDNS/dns"
 	"spiritDNS/shared"
 )
 
@@ -27,7 +27,12 @@ func Resolve(clientQuery *dns.Msg, hostList []string) (*dns.Msg, error) {
 
 	question := clientQuery.Question[0]
 
-	if a, ok := answerCache.Get(question); ok {
+	//if a, ok := answerCache.Get(question); ok {
+	//	resp.Answer = a.answers
+	//	return resp, nil
+	//}
+
+	if a, ok := GetRedisCache(question); ok {
 		resp.Answer = a.answers
 		return resp, nil
 	}
@@ -100,7 +105,8 @@ func Resolve(clientQuery *dns.Msg, hostList []string) (*dns.Msg, error) {
 			}
 
 			// 存入cache
-			go answerCache.Store(question, answers)
+			//go answerCache.Store(question, answers)
+			go StoreRedisCache(question, answers)
 
 			// 返回结果
 			resp.Answer = answers
