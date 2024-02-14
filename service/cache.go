@@ -1,8 +1,8 @@
 package service
 
 import (
+	"github.com/fh550671224/spirit_dns_public"
 	"math"
-	"spiritDNS/dns"
 	"sync"
 	"time"
 )

@@ -1,6 +1,6 @@
 package service
 
-import "spiritDNS/dns"
+import "github.com/fh550671224/spirit_dns_public"
 
 type Packet struct {
 	DnsMsg *dns.Msg
