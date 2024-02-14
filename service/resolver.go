@@ -33,7 +33,7 @@ func Resolve(clientQuery *dns.Msg, hostList []string) (*dns.Msg, error) {
 	//}
 
 	if a, ok := GetRedisCache(question); ok {
-		resp.Answer = a.answers
+		resp.Answer = a
 		return resp, nil
 	}
 

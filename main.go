@@ -10,7 +10,7 @@ func main() {
 	service.InitCache()
 
 	client.InitRedis()
-	defer client.CloseRedis()
+	defer client.RedisClient.CloseRedis()
 
 	service.ListenUDP()
 }
