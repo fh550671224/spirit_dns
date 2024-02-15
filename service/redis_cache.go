@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"github.com/fh550671224/spirit_dns_public"
 	"log"
 	"spiritDNS/client"
@@ -9,24 +10,24 @@ import (
 
 var mu sync.RWMutex
 
-func StoreRedisCache(key dns.Question, answers []dns.RR) {
+func StoreRedisCache(q dns.Question, answers []dns.RR) {
 	mu.Lock()
 	defer mu.Unlock()
 
-	err := client.RedisClient.StoreRedisCache(key, answers)
+	err := client.RedisClient.StoreRedisCache(context.Background(), q, answers)
 	if err != nil {
 		log.Printf("Warning: client.RedisClient.StoreRedisCache err: %v\n", err)
 	}
 }
 
-func GetRedisCache(key dns.Question) ([]dns.RR, bool) {
+func GetRedisCache(q dns.Question) ([]dns.RR, bool) {
 	mu.RLock()
 	defer mu.RUnlock()
 
-	answers, err := client.RedisClient.GetRedisCache(key)
+	answers, err := client.RedisClient.GetRedisCacheByKey(context.Background(), q)
 	if err != nil {
 		log.Printf("Warning: client.RedisClient.GetRedisCache err: %v\n", err)
 		return nil, false
 	}
-	return answers, true
+	return answers, len(answers) > 0
 }
