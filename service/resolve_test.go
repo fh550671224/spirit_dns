@@ -2,7 +2,7 @@ package service
 
 import (
 	"fmt"
-	"spiritDNS/dns"
+	dns "github.com/fh550671224/spirit_dns_public"
 	"spiritDNS/shared"
 	"testing"
 )
