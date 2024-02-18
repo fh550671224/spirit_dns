@@ -3,7 +3,7 @@ module spiritDNS
 go 1.18
 
 require (
-	github.com/fh550671224/spirit_dns_public v1.0.6
+	github.com/fh550671224/spirit_dns_public v1.0.7
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/miekg/dns v1.1.58
 )

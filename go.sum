@@ -12,6 +12,8 @@ github.com/fh550671224/spirit_dns_public v1.0.5 h1:XC2IiW1FIbzsECVoDedyXtAmzbSCc
 github.com/fh550671224/spirit_dns_public v1.0.5/go.mod h1:Zj/jLlq9crxTD8iYyT+xeEPIYcn6OwESLStN3GCQiDY=
 github.com/fh550671224/spirit_dns_public v1.0.6 h1:d7H8MzM+Id8BlattPztuXchMnME2Do+mZiCYPQMBxtI=
 github.com/fh550671224/spirit_dns_public v1.0.6/go.mod h1:Zj/jLlq9crxTD8iYyT+xeEPIYcn6OwESLStN3GCQiDY=
+github.com/fh550671224/spirit_dns_public v1.0.7 h1:EpzEcEitn7n9gjNuPJF5NQkbnSlBvNclLDhPWrFmK+A=
+github.com/fh550671224/spirit_dns_public v1.0.7/go.mod h1:Zj/jLlq9crxTD8iYyT+xeEPIYcn6OwESLStN3GCQiDY=
 github.com/fsnotify/fsnotify v1.4.9 h1:hsms1Qyu0jgnwNXIxa+/V/PDsU6CfLf6CNO8H7IWoS4=
 github.com/go-redis/redis/v8 v8.11.5 h1:AcZZR7igkdvfVmQTPnu9WE37LRrO/YrBH5zWyjDC0oI=
 github.com/go-redis/redis/v8 v8.11.5/go.mod h1:gREzHqY1hg6oD9ngVRbLStwAWKhA0FEgq8Jd4h5lpwo=
