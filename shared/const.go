@@ -2,6 +2,9 @@ package shared
 
 const (
 	MaxLookUpTime = 50
+
+	DNS_QUERY_SOURCE_UDP  = 0
+	DNS_QUERY_SOURCE_HTTP = 1
 )
 
 var ROOT_DNS_SERVERS = []string{

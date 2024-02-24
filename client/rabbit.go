@@ -7,6 +7,13 @@ import (
 
 var RabbitClient dns.RabbitClient
 
+type LogMsg struct {
+	QuerySource int
+	Request     interface{}
+	Addr        string
+	Data        dns.Msg
+}
+
 func InitRabbit() {
 	err := RabbitClient.Init("guest", "guest", "localhost:5672")
 	if err != nil {

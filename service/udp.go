@@ -89,9 +89,10 @@ func HandleConnectionUDP(conn net.UDPConn) {
 				}
 
 				// 记录日志
-				logMsg := dns.SpiritDNSLogMsg{
-					Addr: addr.String(),
-					Data: dnsMsg,
+				logMsg := client.LogMsg{
+					QuerySource: shared.DNS_QUERY_SOURCE_UDP,
+					Addr:        addr.String(),
+					Data:        dnsMsg,
 				}
 				logBytes, err := json.Marshal(&logMsg)
 				if err != nil {
