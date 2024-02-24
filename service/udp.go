@@ -1,10 +1,12 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/fh550671224/spirit_dns_public"
 	"log"
 	"net"
+	"spiritDNS/client"
 	"spiritDNS/network"
 	"spiritDNS/shared"
 )
@@ -39,7 +41,8 @@ func HandleConnectionUDP(conn net.UDPConn) {
 		msg := new(dns.Msg)
 		err = msg.Unpack(buffer[:n])
 		if err != nil {
-			log.Fatal(err)
+			log.Printf("msg.Unpack err:%v", err)
+			continue
 		}
 
 		// TODO 支持所有opcode
@@ -74,12 +77,33 @@ func HandleConnectionUDP(conn net.UDPConn) {
 			case data := <-ch:
 				_, err = conn.WriteToUDP(data, addr)
 				if err != nil {
-					log.Fatalf("net.WriteToUDP err: %v", err)
+					log.Printf("net.WriteToUDP err: %v", err)
+					return
 				}
-				return
+
+				var dnsMsg dns.Msg
+				err = dnsMsg.Unpack(data)
+				if err != nil {
+					log.Printf("dnsMsg.Unpack err:%v", err)
+					return
+				}
+
+				// 记录日志
+				logMsg := dns.SpiritDNSLogMsg{
+					Addr: addr.String(),
+					Data: dnsMsg,
+				}
+				logBytes, err := json.Marshal(&logMsg)
+				if err != nil {
+					log.Printf("Marshal logMsg err: %v", err)
+					return
+				}
+				err = client.RabbitClient.Write(dns.SpiritDNSLog, logBytes)
+				if err != nil {
+					log.Printf("Write logMsg to mq err: %v", err)
+				}
 			}
 		}()
-
 	}
 }
 

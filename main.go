@@ -12,5 +12,8 @@ func main() {
 	client.InitRedis()
 	defer client.RedisClient.CloseRedis()
 
+	client.InitRabbit()
+	defer client.RabbitClient.CloseRabbit()
+
 	service.ListenUDP()
 }
