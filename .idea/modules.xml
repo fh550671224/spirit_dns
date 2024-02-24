@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/spiritDNS.iml" filepath="$PROJECT_DIR$/.idea/spiritDNS.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/spirit_dns.iml" filepath="$PROJECT_DIR$/.idea/spirit_dns.iml" />
     </modules>
   </component>
 </project>
