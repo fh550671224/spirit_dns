@@ -18,7 +18,7 @@ func main() {
 	client.InitRabbit()
 	defer client.RabbitClient.CloseRabbit()
 
-	go service.ListenUDP()
+	//go service.ListenUDP()
 
 	go ListenHttp()
 
