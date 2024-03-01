@@ -26,8 +26,5 @@ WORKDIR /
 # 从构建阶段的镜像中复制二进制文件到当前目录
 COPY --from=builder /app/spirit_dns .
 
-# 指定容器监听的端口号
-EXPOSE 53
-
 # 运行编译好的二进制文件
 CMD ["./spirit_dns"]

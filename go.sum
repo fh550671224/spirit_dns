@@ -13,6 +13,9 @@ github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f h1:lO4WD4F/r
 github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f/go.mod h1:cuUVRXasLTGF7a8hSLbxyZXjz+1KgoB3wDUb6vlszIc=
 github.com/fh550671224/spirit_dns_public v1.0.9 h1:etLDFO7Lqb1WgmsbnUmWV2TCRvENg3h7TOCR4bRNurA=
 github.com/fh550671224/spirit_dns_public v1.0.9/go.mod h1:cd9Bby4aqeJ1/tl/gJYrS3KY3CtXG9idvOq9Zl61s/Q=
+github.com/fh550671224/spirit_dns_public v1.0.10/go.mod h1:cd9Bby4aqeJ1/tl/gJYrS3KY3CtXG9idvOq9Zl61s/Q=
+github.com/fh550671224/spirit_dns_public v1.0.11 h1:HuFaPDKvCRPsaGFaFOqfMkiOYjOkclzpAZpaqMq4jZA=
+github.com/fh550671224/spirit_dns_public v1.0.11/go.mod h1:cd9Bby4aqeJ1/tl/gJYrS3KY3CtXG9idvOq9Zl61s/Q=
 github.com/fsnotify/fsnotify v1.4.9 h1:hsms1Qyu0jgnwNXIxa+/V/PDsU6CfLf6CNO8H7IWoS4=
 github.com/gabriel-vasile/mimetype v1.4.2 h1:w5qFW6JKBz9Y393Y4q372O9A7cUSequkh1Q7OhCmWKU=
 github.com/gabriel-vasile/mimetype v1.4.2/go.mod h1:zApsH/mKG4w07erKIaJPFiX0Tsq9BFQgN3qGY5GnNgA=

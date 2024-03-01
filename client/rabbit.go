@@ -15,8 +15,8 @@ type LogMsg struct {
 }
 
 func InitRabbit() {
-	err := RabbitClient.Init("guest", "guest", "localhost:5672")
+	err := RabbitClient.Init("guest", "guest", "rabbit-service:5672")
 	if err != nil {
-		log.Printf("RabbitMQ Init err:%v", err)
+		log.Printf("Warning: RabbitMQ Init err:%v", err)
 	}
 }

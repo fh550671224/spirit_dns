@@ -11,6 +11,10 @@ import (
 var mu sync.RWMutex
 
 func StoreRedisCache(q dns.Question, answers []dns.RR) {
+	if !client.RedisClient.IsOk() {
+		return
+	}
+
 	mu.Lock()
 	defer mu.Unlock()
 
@@ -21,6 +25,10 @@ func StoreRedisCache(q dns.Question, answers []dns.RR) {
 }
 
 func GetRedisCache(q dns.Question) ([]dns.RR, bool) {
+	if !client.RedisClient.IsOk() {
+		return nil, false
+	}
+
 	mu.RLock()
 	defer mu.RUnlock()
 

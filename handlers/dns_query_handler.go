@@ -46,6 +46,11 @@ func DNSQueryHandler(c *gin.Context) (int, []byte, error) {
 		log.Printf("dns.Pack err: %v\n", err)
 	}
 
+	// skip logging if mq is not ok
+	if !client.RabbitClient.IsOk() {
+		return http.StatusOK, answerData, nil
+	}
+
 	// log
 	go func() {
 		var dnsMsg dns.Msg
@@ -55,7 +60,6 @@ func DNSQueryHandler(c *gin.Context) (int, []byte, error) {
 			return
 		}
 
-		// 记录日志
 		logMsg := client.LogMsg{
 			QuerySource: shared.DNS_QUERY_SOURCE_HTTP,
 			Request:     c.Request,
