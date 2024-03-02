@@ -1,10 +1,12 @@
 apiVersion: v1
 kind: Service
 metadata:
-    name: spiritdns
+  name: spirit-dns-service
 spec:
-    type: LoadBalancer
-    ports:
-    - port: 12227 
-    selector:
-        app: spiritdns
+  selector:
+    app: spirit-dns
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+  type: LoadBalancer

@@ -1,19 +1,19 @@
-apiVersion : apps/v1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: spiritdns 
+  name: spirit-dns
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
-      app: spiritdns
+      app: spirit-dns
   template:
     metadata:
       labels:
-        app: spiritdns 
+        app: spirit-dns
     spec:
       containers:
-        - name: spiritdns 
-          image: spiritdns.azurecr.io/spiritdns
+        - name: spirit-dns
+          image: spirit-dns:latest
           ports:
-          - containerPort: 12227
+            - containerPort: 8080
