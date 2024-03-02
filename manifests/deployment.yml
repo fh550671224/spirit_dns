@@ -14,6 +14,6 @@ spec:
     spec:
       containers:
         - name: spirit-dns
-          image: spirit-dns:latest
+          image: us-west1-docker.pkg.dev/adept-coda-415809/spirit-dns:latest
           ports:
             - containerPort: 8080
