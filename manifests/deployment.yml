@@ -17,3 +17,5 @@ spec:
           image: richard1227/spirit_dns
           ports:
             - containerPort: 8080
+      imagePullSecrets:
+        - name: docker-registry-key
