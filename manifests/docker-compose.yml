@@ -1,0 +1,25 @@
+version: '3.8'
+services:
+  spirit-dns:
+    image: richard1227/spirit_dns
+    container_name: spirit-dns
+    ports:
+      - "8080:8080"
+    networks:
+      - mynet
+
+  spirit-dns-nginx:
+    image: nginx
+    container_name: spirit-dns-nginx
+    ports:
+      - "443:443"
+    volumes:
+      - /home/azureuser/nginx/custom-ssl.conf:/etc/nginx/conf.d/custom-ssl.conf
+      - /home/azureuser/nginx/crts/tls.crt:/etc/ssl/certs/nginx.crt
+      - /home/azureuser/nginx/crts/tls.key:/etc/ssl/private/nginx.key
+    networks:
+      - mynet
+
+networks:
+  mynet:
+    driver: bridge
