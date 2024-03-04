@@ -14,9 +14,9 @@ services:
     ports:
       - "443:443"
     volumes:
-      - /home/azureuser/nginx/custom-ssl.conf:/etc/nginx/conf.d/custom-ssl.conf
-      - /home/azureuser/nginx/crts/tls.crt:/etc/ssl/certs/nginx.crt
-      - /home/azureuser/nginx/crts/tls.key:/etc/ssl/private/nginx.key
+      - ${CUSTOM_NGINX_PATH}:/etc/nginx/conf.d/custom-ssl.conf
+      - ${CRT_PATH}:/etc/ssl/certs/nginx.crt
+      - ${KEY_PATH}:/etc/ssl/private/nginx.key
     networks:
       - mynet
 
