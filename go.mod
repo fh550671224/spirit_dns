@@ -3,9 +3,10 @@ module spiritDNS
 go 1.18
 
 require (
-	github.com/fh550671224/spirit_dns_public v1.0.11
+	github.com/fh550671224/spirit_dns_public v1.0.15
 	github.com/gin-gonic/gin v1.9.1
-	github.com/unrolled/secure v1.14.0
+	github.com/google/go-cmp v0.5.5
+	github.com/miekg/dns v1.1.58
 )
 
 require (
@@ -32,9 +33,11 @@ require (
 	github.com/ugorji/go/codec v1.2.11 // indirect
 	golang.org/x/arch v0.3.0 // indirect
 	golang.org/x/crypto v0.18.0 // indirect
+	golang.org/x/mod v0.14.0 // indirect
 	golang.org/x/net v0.20.0 // indirect
 	golang.org/x/sys v0.16.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
+	golang.org/x/tools v0.17.0 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

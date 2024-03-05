@@ -16,7 +16,7 @@ func Resolve(clientQuery *dns.Msg, hostList []string) (*dns.Msg, error) {
 		Authoritative:      false,
 		RecursionDesired:   clientQuery.RecursionDesired,
 		RecursionAvailable: true,
-		Rcode:              0,
+		Rcode:              dns.RcodeSuccess,
 	}
 	resp.Question = clientQuery.Question
 
@@ -26,6 +26,12 @@ func Resolve(clientQuery *dns.Msg, hostList []string) (*dns.Msg, error) {
 	}
 
 	question := clientQuery.Question[0]
+
+	// TODO need to implement all common types
+	if _, ok := dns.TypeToRR[question.QType]; !ok {
+		resp.MsgHdr.Rcode = dns.RcodeNotImplemented
+		return resp, nil
+	}
 
 	if a, ok := GetRedisCache(question); ok {
 		resp.Answer = a
@@ -81,18 +87,16 @@ func Resolve(clientQuery *dns.Msg, hostList []string) (*dns.Msg, error) {
 			for len(temp) > 0 {
 				ans := temp[0]
 
-				answers = append(answers, ans)
-				temp = temp[1:]
-
-				if ans.Header().Rrtype == dns.TypeA || ans.Header().Rrtype == dns.TypeAAAA {
-					continue
+				if ans.Header().Rrtype == question.QType {
+					answers = append(answers, ans)
+					temp = temp[1:]
 				}
 
 				if ans.Header().Rrtype == dns.TypeCNAME {
 					// 需要查询CName记录里的域名解析
 					if Cr, ok := ans.(*dns.CNAME); ok {
 						m := new(dns.Msg)
-						m.SetQuestion(Cr.Target, dns.TypeA)
+						m.SetQuestion(Cr.Target, question.QType)
 						res, err := Resolve(m, hostList)
 						if err != nil {
 							return nil, err
@@ -100,7 +104,6 @@ func Resolve(clientQuery *dns.Msg, hostList []string) (*dns.Msg, error) {
 
 						answers = append(answers, res.Answer...)
 					}
-
 				}
 			}
 
@@ -111,9 +114,8 @@ func Resolve(clientQuery *dns.Msg, hostList []string) (*dns.Msg, error) {
 			// 返回结果
 			resp.Answer = answers
 			return resp, nil
-		}
-
-		if len(msg.Ns) > 0 {
+		} else if len(msg.Ns) > 0 {
+			// TODO 这块写的太丑陋了，要重新写
 			// 只有NS记录
 			if len(msg.Extra) > 0 {
 				// 有Extra记录，直接使用Extra记录的ip递归查询
@@ -134,8 +136,19 @@ func Resolve(clientQuery *dns.Msg, hostList []string) (*dns.Msg, error) {
 				}
 			} else {
 				// 需要查询NS记录里的域名解析
+				var name string
+				rr := msg.Ns[0]
+				if soa, ok := rr.(*dns.SOA); ok {
+					resp.Ns = append(resp.Ns, soa)
+					return resp, nil
+				}
+
+				if ns, ok := rr.(*dns.NS); ok {
+					name = ns.Ns
+				}
+
 				m := new(dns.Msg)
-				m.SetQuestion(msg.Ns[0].Header().Name, dns.TypeA)
+				m.SetQuestion(name, dns.TypeA)
 				res, err := Resolve(m, []string{pack.Ip})
 				if err != nil {
 					return nil, err
@@ -155,9 +168,11 @@ func Resolve(clientQuery *dns.Msg, hostList []string) (*dns.Msg, error) {
 					return nil, fmt.Errorf("TrySendUDP err: %v", err)
 				}
 			}
-
+		} else {
+			resp.Rcode = pack.DnsMsg.Rcode
+			return resp, nil
 		}
 	}
 
-	return nil, fmt.Errorf("not resolved")
+	return resp, nil
 }

@@ -107,17 +107,11 @@ func TrySendTCPRequest(addrList []*net.TCPAddr, data []byte) (*Packet, error) {
 			log.Printf("%s sendTCPRequest err: %v, trying next addr", addr.String(), err)
 			continue
 		}
-		log.Printf("%s sendTCPRequest success", addr.String())
 
 		msg := new(dns.Msg)
 		err = msg.Unpack(resp)
 		if err != nil {
 			return nil, fmt.Errorf("dns.Unpack err: %v", err)
-		}
-
-		if msg.IsInvalid() {
-			log.Printf("%s has no Answer or Ns, trying next addr", addr.String())
-			continue
 		}
 
 		return &Packet{

@@ -116,17 +116,10 @@ func TrySendUDP(addrList []*net.UDPAddr, data []byte) (*Packet, error) {
 			continue
 		}
 
-		log.Printf("%s sendUDPRequest success", addr.String())
-
 		msg := new(dns.Msg)
 		err = msg.Unpack(resp)
 		if err != nil {
 			return nil, fmt.Errorf("dns.Unpack err: %v", err)
-		}
-
-		if msg.IsInvalid() {
-			log.Printf("%s has no Answer or Ns, trying next addr", addr.String())
-			continue
 		}
 
 		return &Packet{
