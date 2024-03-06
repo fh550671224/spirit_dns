@@ -17,6 +17,14 @@ github.com/fh550671224/spirit_dns_public v1.0.14 h1:52o/eySb6cR8iWNyArBfVPMQOWQT
 github.com/fh550671224/spirit_dns_public v1.0.14/go.mod h1:cd9Bby4aqeJ1/tl/gJYrS3KY3CtXG9idvOq9Zl61s/Q=
 github.com/fh550671224/spirit_dns_public v1.0.15 h1:w3NZ38R2DLtDLKjriwHsG8TFy6baUZ9183z1q5xcMkM=
 github.com/fh550671224/spirit_dns_public v1.0.15/go.mod h1:cd9Bby4aqeJ1/tl/gJYrS3KY3CtXG9idvOq9Zl61s/Q=
+github.com/fh550671224/spirit_dns_public v1.0.16 h1:qFPiwGzkrLkAS7X662OyCOdhK3A/FdTQuCevSZN7mAM=
+github.com/fh550671224/spirit_dns_public v1.0.16/go.mod h1:cd9Bby4aqeJ1/tl/gJYrS3KY3CtXG9idvOq9Zl61s/Q=
+github.com/fh550671224/spirit_dns_public v1.0.17 h1:whOZKebakOVPPNVNN585GJC7hToBCKmJEqjRAnechfw=
+github.com/fh550671224/spirit_dns_public v1.0.17/go.mod h1:cd9Bby4aqeJ1/tl/gJYrS3KY3CtXG9idvOq9Zl61s/Q=
+github.com/fh550671224/spirit_dns_public v1.0.18 h1:K5h8nqKkZKrDVGLIwQh+QPYL2Swg5XlzueZRp+xRylM=
+github.com/fh550671224/spirit_dns_public v1.0.18/go.mod h1:cd9Bby4aqeJ1/tl/gJYrS3KY3CtXG9idvOq9Zl61s/Q=
+github.com/fh550671224/spirit_dns_public v1.1.0 h1:Kb8noHfWixzM4yQhEPs0IIJa5llRE58dEkxhtkcNfRw=
+github.com/fh550671224/spirit_dns_public v1.1.0/go.mod h1:cd9Bby4aqeJ1/tl/gJYrS3KY3CtXG9idvOq9Zl61s/Q=
 github.com/fsnotify/fsnotify v1.4.9 h1:hsms1Qyu0jgnwNXIxa+/V/PDsU6CfLf6CNO8H7IWoS4=
 github.com/gabriel-vasile/mimetype v1.4.2 h1:w5qFW6JKBz9Y393Y4q372O9A7cUSequkh1Q7OhCmWKU=
 github.com/gabriel-vasile/mimetype v1.4.2/go.mod h1:zApsH/mKG4w07erKIaJPFiX0Tsq9BFQgN3qGY5GnNgA=
